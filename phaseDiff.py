@@ -8,7 +8,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from readsquidFiles import readsquidfiles
+from scipy import signal
 
 
 def getPhaseDiff():
@@ -16,7 +18,6 @@ def getPhaseDiff():
     DataMat, Fs, FileName = readsquidfiles()
     # print(DataMat.size)
 
-    window_size = 1000
 
     # 选取通道
     channel_code_1 = 0
@@ -26,8 +27,31 @@ def getPhaseDiff():
 
     channel_1 = DataMat[channel_name_1]
     channel_2 = DataMat[channel_name_2]
-    ch_test = channel_1[0: 100]
-    print(findMaxArray(ch_test))
+
+    # 配置滤波器
+    low = 9         # 低频
+    high = 13       # 高频
+    N = 6           # 滤波器阶数
+    b, a = signal.butter(6, [9, 13], btype='bandpass', output='ba', analog='False')
+    signal.freqz(b, a)
+    # 绘制未滤波前图像
+    x = np.array(range(10000, 20000))
+    y = channel_1[10000: 20000]
+    plt.title('before')
+    plt.plot(x, y)
+    plt.show()
+    # 滤波后图像
+    ch_test = signal.filtfilt(b, a, channel_1[10000: 20000])
+    y = ch_test
+    plt.title('after')
+    plt.plot(x, y)
+    plt.show()
+    # 绘制滤波器响应曲线
+    plt.plot(b, abs(a))
+    plt.show()
+
+    print(ch_test)
+    # print(findMaxArray(ch_test))
     # ch1_max = findMaxArray(channel_1)
     # ch2_max = findMaxArray(channel_2)
 
@@ -40,10 +64,11 @@ def findMaxArray(channel):
     maxSeries = pd.Series(dtype=float)
     print(cha_df)
     for i in range (1, len(cha_df) - 1):
-        if cha_df[i] > 0 and cha_df[i + 1] < 0:
+        if cha_df[i] > 0 > cha_df[i + 1]:
             maxSeries[str(i)] = channel[i]
 
     print(maxSeries)
+    return maxSeries
 
 
     # # 补0使长度匹配
