@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 from readsquidFiles import readsquidfiles
 from scipy import signal
 
+start = 145600
+end = 2072000
+
 
 def getPhaseDiff():
     """
@@ -23,7 +26,6 @@ def getPhaseDiff():
     """
     # 读取tdsm文件
     DataMat, Fs, FileName = readsquidfiles()
-    # print(DataMat.size)
 
     # 选取通道
     channel_code_1 = input('请输入选取的第一个通道：')
@@ -48,16 +50,19 @@ def getPhaseDiff():
     # plt.plot(x, y)
     # plt.show()
 
-    # 滤波后图像
+    # 对信号进行带通滤波
     b, a = signal.butter(N, [low, high], 'bandpass', fs=Fs)
-    # b, a = signal.iirfilter(3, [9, 13], fs=Fs)
     ch_filt1 = signal.filtfilt(b, a, channel_1, padlen=3 * (max(len(a), len(b)) - 1))  # padlen设置与matlab相同
     ch_filt2 = signal.filtfilt(b, a, channel_2, padlen=3 * (max(len(a), len(b)) - 1))  # padlen设置与matlab相同
-    # ch_filt = signal.filtfilt(b, a, channel_1, padlen=3*(max(len(a), len(b)) - 1))  # padlen设置与matlab相同
-    x = np.array(range(0, len(ch_filt1)))
+    ch_filt1 = ch_filt1[start:end]
+    ch_filt2 = ch_filt2[start:end]
+
+    # 滤波后图像
+    # x = np.array(range(0, len(ch_filt1)))
     # y = ch_filt1
     # plt.title('after')
-    # plt.plot(x, y)
+    # plt.plot(x, y, 'b')
+    # plt.plot(x, ch_filt2, 'r')
     # plt.show()
 
     # # 绘制滤波器频率响应曲线
@@ -83,14 +88,6 @@ def getPhaseDiff():
     # writer2.save()
     # writer2.close()
 
-    # # 补0使长度匹配
-    # if len(ch1_max) > len(ch2_max):
-    #     ch2_max = np.pad(ch2_max, (0, len(ch1_max) - len(ch2_max)), constant_values='0')
-    # elif len(ch2_max) > len(ch1_max):
-    #     ch1_max = np.pad(ch1_max, (0, len(ch2_max) - len(ch1_max)), constant_values='0')
-    # print('ch1 pad length:' + str(len(ch1_max)))
-    # print('ch2 pad length:' + str(len(ch2_max)))
-
     # 对最大值数组进行处理，输出结果
     diffp = np.zeros(shape=(1,))
     list_1 = list(ch1_max.index)
@@ -98,7 +95,9 @@ def getPhaseDiff():
     for i in range(0, min(len(ch1_max), len(ch2_max))):
         diffp = np.append(diffp, int(list_1[i]) - int(list_2[i]))
 
-    diff = diffp / Fs * 11 * 360 / (2 * math.pi)
+    # diff = diffp
+    diff = (diffp / Fs) * 11 * 360
+    diff = diff[0:10000]
     data = pd.DataFrame(diff)
     try:
         if os.path.exists('diff.xlsx'):
